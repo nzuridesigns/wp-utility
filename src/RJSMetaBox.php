@@ -1,6 +1,6 @@
 <?php
 
-namespace Jcodify\CarRentalTheme\Wordpress\MetaBox;
+namespace Nzuridesigns\WPUtility;
 
 // the class name is clash with the react another class let make it unique
 class RJSMetaBox

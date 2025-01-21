@@ -1,6 +1,6 @@
 <?php
 
-namespace Jcodify\CarRentalTheme\Wordpress;
+namespace Nzuridesigns\WPUtility;
 
 class CustomPostType
 {

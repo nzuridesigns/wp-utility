@@ -1,6 +1,6 @@
 <?php
 
-namespace Jcodify\CarRentalTheme\Wordpress\Columns;
+namespace Nzuridesigns\WPUtility;
 
 /**
  * Class for registering custom columns for various post types in WordPress.

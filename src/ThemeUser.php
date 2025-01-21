@@ -1,10 +1,7 @@
 <?php
 
-namespace Jcodify\CarRentalTheme\Wordpress;
+namespace Nzuridesigns\WPUtility;
 
-use Jcodify\CarRentalTheme\Wordpress\ORM\Enums\RentalStatus;
-use Jcodify\CarRentalTheme\Wordpress\ORM\Helpers\CB;
-use Jcodify\CarRentalTheme\Wordpress\ORM\Models\Extended\ExtendedRentalsMetaModel;
 use WP_User;
 
 class ThemeUser
@@ -98,15 +95,6 @@ class ThemeUser
         return $country;
     }
 
-    public function getCountry(): string
-    {
-        $countryCode = $this->getCountryCode();
-        $country = get_country_name($countryCode);
-        if (!$country) {
-            throw new \Exception('User Country not found');
-        }
-        return $country;
-    }
     public function getPostalCode(): string
     {
         $postalCode = get_user_meta($this->user->ID, 'postal_code', true);
@@ -114,82 +102,5 @@ class ThemeUser
             throw new \Exception('User address not found');
         }
         return $postalCode;
-    }
-
-    public function isPlanningToRentCar(): bool
-    {
-        $rentCar = get_user_meta($this->user->ID, 'rent_car', true);
-        if (!$rentCar) {
-            throw new \Exception('User address not found');
-        }
-        return $rentCar;
-    }
-
-    public function getLicence(): string
-    {
-        $licence = get_user_meta($this->user->ID, 'licence', true);
-        if (!$licence) {
-            throw new \Exception('User address not found');
-        }
-        return $licence;
-    }
-
-
-    public function getLicenseCountryOfIssueCode(): string
-    {
-        $licenseCountryOfIssue = get_user_meta($this->user->ID, 'license_country_of_issue', true);
-        if (!$licenseCountryOfIssue) {
-            throw new \Exception('User address not found');
-        }
-        return $licenseCountryOfIssue;
-    }
-
-    public function getLicenseCountryOfIssue(): string
-    {
-        $licenseCountryOfIssue = get_country_name($this->getLicenseCountryOfIssueCode());
-        if (!$licenseCountryOfIssue) {
-            throw new \Exception('User address not found');
-        }
-        return $licenseCountryOfIssue;
-    }
-
-    public function getLicenseExpiration(): string
-    {
-        $licenseExpiration = get_user_meta($this->user->ID, 'license_expiration', true);
-        if (!$licenseExpiration) {
-            throw new \Exception('User address not found');
-        }
-        return $licenseExpiration;
-    }
-
-    public function isRepeatingCustomer(): bool
-    {
-
-        $rental_agreements = ExtendedRentalsMetaModel::filterByQueries(
-            CB::metaQuery(
-                ['status-eq' => RentalStatus::COMPLETED->value,'user-eq' => $this->getId()]
-            )
-        );
-
-        return count($rental_agreements) > 0;
-    }
-
-    public function getFormattedAddress(): string
-    {
-        $address = $this->getAddress();
-        $apartment = $this->getApartment();
-        $city = $this->getCity();
-        $stateProvince = $this->getStateProvince();
-        $country = $this->getCountry();
-        $postalCode = $this->getPostalCode();
-
-        return implode("\n", [$address, $apartment, $city, $stateProvince, $country, $postalCode]);
-    }
-
-
-    public function hasUploadedLicence(): bool
-    {
-        $licence = get_user_meta($this->user->ID, 'licence', true);
-        return !empty($licence);
     }
 }
