@@ -1,0 +1,13 @@
+{
+  "name": "nzuridesigns/wp-utility",
+  "description": "A description of your package",
+  "type": "library",
+  "require": {
+    "php": ">=7.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Nzuridesigns\\WPUtility\\": "src/"
+    }
+  }
+}
