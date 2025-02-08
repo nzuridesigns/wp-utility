@@ -3,7 +3,8 @@
   "description": "A description of your package",
   "type": "library",
   "require": {
-    "php": ">=7.4"
+    "php": ">=7.4",
+    "illuminate/support": "^11.41"
   },
   "autoload": {
     "psr-4": {
