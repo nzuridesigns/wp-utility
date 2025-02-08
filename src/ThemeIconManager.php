@@ -2,8 +2,6 @@
 
 namespace Nzuridesigns\WPUtility;
 
-use Jcodify\CarRentalTheme\IconManager;
-
 class ThemeIconManager
 {
     private static ?IconManager $instance = null;
