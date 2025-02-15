@@ -46,16 +46,44 @@ class AutoBlockRegistrar
         $this->srcDir = $srcDir;
     }
 
+    protected function fullPath(string $path): string
+    {
+        return $this->baseDir . $path;
+    }
+
+    protected function absoluteSrcPath(): string
+    {
+        return $this->fullPath($this->srcDir);
+    }
+
+    protected function absoluteBuildPath(): string
+    {
+        return $this->fullPath($this->buildDir);
+    }
+
+
     /**
-     * Registers all blocks by reconciling source and build paths.
+     * Registers all blocks in the build directory.
+     */
+    public function registerBuildBlocks(): void
+    {
+        $buildPaths = $this->getBlockPaths($this->absoluteBuildPath());
+        foreach ($buildPaths['paths'] as $jsonPath) {
+            register_block_type_from_metadata($jsonPath['path']);
+        }
+    }
+
+    /**
+     * Registers all blocks for development purposes by reconciling source and build paths.
      *
      * @return WP_Error|void Returns WP_Error on failure.
      */
-    public function registerBlocks()
+    public function registerBlocksForDevelopmentMode()
     {
         try {
-            $buildPaths = $this->getBlockPaths($this->baseDir . $this->buildDir);
-            $srcPaths = $this->getBlockPaths($this->baseDir . $this->srcDir);
+            $this->removeDuplicateBlocks($this->absoluteBuildPath());
+            $buildPaths = $this->getBlockPaths($this->absoluteBuildPath());
+            $srcPaths = $this->getBlockPaths($this->absoluteSrcPath());
 
             if (empty($buildPaths['paths']) || empty($srcPaths['paths'])) {
                 return new WP_Error('no_blocks_found', 'No blocks found in the specified directories.');
@@ -71,6 +99,20 @@ class AutoBlockRegistrar
         }
     }
 
+    protected function getPathRecursiveIterator(string $path): RecursiveIteratorIterator
+    {
+
+        return new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path),
+            RecursiveIteratorIterator::LEAVES_ONLY
+        );
+    }
+
+    protected function isBlockJsonFile(mixed $file): bool
+    {
+        return $file->isFile() && $file->getFilename() === 'block.json';
+    }
+
     /**
      * Retrieves block paths and relative paths for JSON files.
      *
@@ -79,12 +121,12 @@ class AutoBlockRegistrar
      */
     protected function getBlockPaths(string $path): array
     {
-        $dir = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path), RecursiveIteratorIterator::LEAVES_ONLY);
+        $dir = $this->getPathRecursiveIterator($path);
 
         $paths = [];
         $rel = [];
         foreach ($dir as $file) {
-            if ($file->isFile() && $file->getFilename() === 'block.json') {
+            if ($this->isBlockJsonFile($file)) {
                 $relativePath = substr($file->getPath(), strlen($path));
                 $paths[] = ['path' => $file->getPath(), 'rel' => $relativePath];
                 $rel[] = $relativePath;
@@ -113,5 +155,58 @@ class AutoBlockRegistrar
         return array_map(function ($jsonPath) {
             return $jsonPath['path'];
         }, $reconciledPaths);
+    }
+
+
+    /**
+     * Removes duplicate blocks from a directory.
+     *
+     * @param string $path The path to the build directory.
+     */
+    protected function removeDuplicateBlocks(string $path): void
+    {
+        $uniqueNames = [];
+        $build = $this->getPathRecursiveIterator($path);
+        foreach ($build as $file) {
+            if ($this->isBlockJsonFile($file)) {
+                $block_json = json_decode(file_get_contents($file->getPathname()), true);
+                if (!isset($block_json['name'])) {
+                    continue;
+                }
+                $uniqueName = $block_json['name'];
+                if (!isset($uniqueNames[$uniqueName])) {
+                    $uniqueNames[$uniqueName] = $file->getPath();
+                    continue;
+                }
+                // delete the oldest dir
+                $parentDir = $file->getPath();
+                $currentTime = filemtime($parentDir);
+                $storedParentDir = $uniqueNames[$uniqueName];
+                $storedTime = filemtime($storedParentDir);
+                $pathToDelete = $parentDir;
+
+                if ($storedTime > $currentTime) {
+                    $uniqueNames[$uniqueName] = $parentDir;
+                    $pathToDelete = $storedParentDir;
+                }
+                $this->deleteDirectory($pathToDelete);
+            }
+        }
+    }
+
+    protected function deleteDirectory($dir)
+    {
+        if (!is_dir($dir)) {
+            return false; // Return false if it's not a directory
+        }
+
+        $items = array_diff(scandir($dir), ['.', '..']); // Get all items except . and ..
+
+        foreach ($items as $item) {
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            is_dir($path) ? $this->deleteDirectory($path) : unlink($path);
+        }
+
+        return rmdir($dir); // Remove the directory itself
     }
 }
